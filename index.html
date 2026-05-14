@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Plunt Chop — نظام الكشير</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --gold: #c8a04a;
+    --gold-dim: rgba(200,160,74,0.12);
+    --text: #f0ede8;
+    --text-muted: #888;
+    --text-faint: #555;
+    --danger: #e05050;
+    --success: #4caf7d;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; line-height: 1.6; overflow-x: hidden; }
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; height: 64px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+  .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: var(--text); }
+  .logo-sub { font-size: 11px; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-top: -4px; }
+  .topbar-date { font-size: 12px; color: var(--text-muted); text-align: left; }
+
+  /* NAV */
+  .nav-tabs { display: flex; gap: 4px; padding: 1rem 2rem 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .nav-tab { padding: 10px 20px; border-radius: var(--radius) var(--radius) 0 0; border: 1px solid transparent; border-bottom: none; background: transparent; color: var(--text-muted); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { background: var(--bg); border-color: var(--border); color: var(--gold); font-weight: 500; }
+
+  /* MAIN */
+  .main { flex: 1; padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; animation: fadeUp 0.25s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: var(--gold-dim); border-radius: 0 var(--radius-lg) 0 60px; }
+  .stat-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; color: var(--gold); }
+  .stat-value.white { color: var(--text); }
+
+  /* CASHIER */
+  .cashier-grid { display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; align-items: start; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); }
+  .panel-title { font-size: 13px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .panel-body { padding: 1.25rem 1.5rem; }
+
+  .cat-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border2); background: transparent; color: var(--text-muted); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .cat-btn:hover { border-color: var(--gold); color: var(--text); }
+  .cat-btn.active { background: var(--gold); border-color: var(--gold); color: #000; font-weight: 500; }
+
+  .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 1rem; }
+  .svc-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: all 0.15s; text-align: right; position: relative; overflow: hidden; }
+  .svc-btn::after { content: ''; position: absolute; inset: 0; background: var(--gold); opacity: 0; transition: opacity 0.15s; }
+  .svc-btn:hover { border-color: var(--gold); }
+  .svc-btn:hover::after { opacity: 0.05; }
+  .svc-btn:active { transform: scale(0.97); }
+  .svc-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .svc-price { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); letter-spacing: 1px; }
+  .svc-unit { font-size: 10px; color: var(--text-muted); }
+
+  /* INVOICE */
+  .invoice-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; position: sticky; top: 130px; }
+  .invoice-head { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .invoice-title { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .clear-btn { background: none; border: none; color: var(--text-faint); font-size: 11px; cursor: pointer; font-family: 'IBM Plex Sans Arabic', sans-serif; transition: color 0.15s; }
+  .clear-btn:hover { color: var(--danger); }
+  .invoice-items { padding: 0.5rem 0; min-height: 200px; max-height: 340px; overflow-y: auto; }
+  .invoice-items::-webkit-scrollbar { width: 4px; }
+  .invoice-items::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1rem; color: var(--text-faint); gap: 8px; font-size: 12px; }
+  .empty-icon { font-size: 32px; opacity: 0.3; }
+  .inv-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 1.5rem; border-bottom: 1px solid var(--border); animation: slideIn 0.2s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+  .inv-item:last-child { border-bottom: none; }
+  .inv-name { font-size: 13px; }
+  .inv-right { display: flex; align-items: center; gap: 12px; }
+  .inv-price { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); letter-spacing: 1px; }
+  .inv-remove { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 18px; line-height: 1; transition: color 0.15s; padding: 2px; }
+  .inv-remove:hover { color: var(--danger); }
+  .invoice-footer { border-top: 1px solid var(--border); padding: 1.25rem 1.5rem; }
+  .total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .total-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .total-value { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--gold); letter-spacing: 1px; }
+  .confirm-btn { width: 100%; padding: 14px; background: var(--gold); color: #000; border: none; border-radius: var(--radius); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; }
+  .confirm-btn:hover { background: #dbb558; transform: translateY(-1px); }
+  .confirm-btn:active { transform: scale(0.98); }
+  .confirm-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  /* SERVICES MANAGER */
+  .services-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .page-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+  .add-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: var(--gold); color: #000; border: none; border-radius: var(--radius); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .add-btn:hover { background: #dbb558; }
+  .svc-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 10px 16px; font-size: 11px; font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); text-align: right; }
+  thead th:last-child { text-align: left; }
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:last-child { text-align: left; }
+  .cat-tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .tag-hair { background: rgba(255,255,255,0.08); color: #ccc; }
+  .tag-beard { background: rgba(200,160,74,0.15); color: var(--gold); }
+  .tag-extra { background: rgba(76,175,125,0.12); color: #4caf7d; }
+  .tbl-price { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: var(--gold); letter-spacing: 1px; }
+  .act-btns { display: flex; gap: 6px; }
+  .act-btn { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border2); background: transparent; color: var(--text-muted); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 4px; }
+  .act-btn:hover { color: var(--text); border-color: var(--text); }
+  .act-btn.del:hover { color: var(--danger); border-color: var(--danger); background: rgba(224,80,80,0.08); }
+
+  /* SERVICE MODAL */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 2rem; width: 420px; max-width: 95vw; animation: scaleIn 0.2s ease; }
+  @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 1.5rem; color: var(--gold); }
+  .form-row { margin-bottom: 1.25rem; }
+  .form-label { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .form-input, .form-select { width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; outline: none; transition: border-color 0.15s; direction: rtl; }
+  .form-input:focus, .form-select:focus { border-color: var(--gold); }
+  .form-input::placeholder { color: var(--text-faint); }
+  .modal-actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .modal-save { flex: 1; padding: 11px; background: var(--gold); color: #000; border: none; border-radius: var(--radius); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .modal-save:hover { background: #dbb558; }
+  .modal-cancel { padding: 11px 20px; background: transparent; border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text-muted); font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.15s; }
+  .modal-cancel:hover { border-color: var(--text); color: var(--text); }
+
+  /* RECEIPT MODAL */
+  .receipt-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+  .receipt-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+  .receipt-wrapper { background: #fff; border-radius: 16px; width: 360px; max-width: 95vw; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.6); animation: scaleIn 0.22s ease; direction: rtl; color: #111; }
+  .receipt-inner { padding: 28px 24px; font-family: 'IBM Plex Sans Arabic', sans-serif; }
+  /* Brand */
+  .r-brand { text-align: center; border-bottom: 2px dashed #e0e0e0; padding-bottom: 18px; margin-bottom: 16px; }
+  .r-brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 6px; color: #111; line-height: 1; }
+  .r-brand-sub { font-size: 11px; color: #999; letter-spacing: 2px; margin-top: 4px; }
+  /* Meta */
+  .r-meta { display: flex; justify-content: space-between; font-size: 11px; color: #777; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px dashed #eee; }
+  .r-meta-col { display: flex; flex-direction: column; gap: 2px; }
+  .r-meta-col.ltr { text-align: left; }
+  .r-meta-key { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
+  .r-meta-val { font-size: 12px; color: #555; font-weight: 500; }
+  .r-inv-badge { display: inline-block; background: #111; color: #fff; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; letter-spacing: 1px; font-family: 'Bebas Neue', sans-serif; }
+  /* Items */
+  .r-items-hd { font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .r-item { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid #f5f5f5; }
+  .r-item:last-child { border-bottom: none; }
+  .r-item-name { font-size: 13px; color: #222; }
+  .r-item-price { font-family: 'Bebas Neue', sans-serif; font-size: 17px; color: #111; letter-spacing: 1px; }
+  /* Total */
+  .r-divider { border: none; border-top: 2px dashed #e0e0e0; margin: 14px 0; }
+  .r-total { display: flex; justify-content: space-between; align-items: center; }
+  .r-total-label { font-size: 14px; font-weight: 700; color: #111; }
+  .r-total-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #111; letter-spacing: 1px; }
+  /* Footer */
+  .r-footer { text-align: center; margin-top: 18px; padding-top: 16px; border-top: 2px dashed #e0e0e0; }
+  .r-footer-msg { font-size: 14px; font-weight: 600; color: #444; margin-bottom: 4px; }
+  .r-footer-sub { font-size: 11px; color: #aaa; letter-spacing: 1px; }
+  /* Actions */
+  .receipt-actions { display: flex; border-top: 1px solid #eee; }
+  .r-close-btn { flex: 0 0 60px; padding: 15px; background: #f7f7f7; color: #999; border: none; border-left: 1px solid #eee; font-size: 20px; cursor: pointer; transition: background 0.15s; }
+  .r-close-btn:hover { background: #efefef; color: #333; }
+  .r-print-btn { flex: 1; padding: 15px; background: #111; color: #fff; border: none; font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .r-print-btn:hover { background: #2a2a2a; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--success); color: #000; padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 600; z-index: 300; transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275); white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* PRINT */
+  @media print {
+    body * { visibility: hidden !important; }
+    #print-zone, #print-zone * { visibility: visible !important; }
+    #print-zone { position: fixed; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 30px; background: #fff; }
+    .receipt-actions { display: none !important; }
+    .receipt-wrapper { box-shadow: none !important; border-radius: 0 !important; width: 310px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div>
+      <div class="logo-text">PLUNT CHOP</div>
+      <div class="logo-sub">نظام الكشير الاحترافي</div>
+    </div>
+    <div class="topbar-date" id="topbar-date"></div>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('cashier',this)">🧾 الكشير</button>
+    <button class="nav-tab" onclick="switchTab('services',this)">⚙️ إدارة الخدمات</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- CASHIER -->
+    <div class="tab-pane active" id="pane-cashier">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">مبيعات اليوم</div><div class="stat-value" id="stat-sales">0.000 د.ك</div></div>
+        <div class="stat-card"><div class="stat-label">عدد الفواتير</div><div class="stat-value white" id="stat-count">0</div></div>
+        <div class="stat-card"><div class="stat-label">متوسط الفاتورة</div><div class="stat-value" id="stat-avg">0.000 د.ك</div></div>
+      </div>
+
+      <div class="cashier-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">اختر الخدمة</span>
+            <div class="cat-filter">
+              <button class="cat-btn active" data-cat="all" onclick="filterCat(this)">الكل</button>
+              <button class="cat-btn" data-cat="hair" onclick="filterCat(this)">شعر</button>
+              <button class="cat-btn" data-cat="beard" onclick="filterCat(this)">لحية</button>
+              <button class="cat-btn" data-cat="extra" onclick="filterCat(this)">إضافات</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="service-grid" id="service-picker"></div>
+          </div>
+        </div>
+
+        <div class="invoice-panel">
+          <div class="invoice-head">
+            <span class="invoice-title">الفاتورة الحالية</span>
+            <button class="clear-btn" onclick="clearInvoice()">مسح الكل</button>
+          </div>
+          <div class="invoice-items" id="invoice-items">
+            <div class="empty-state"><div class="empty-icon">🧾</div>لا توجد خدمات بعد</div>
+          </div>
+          <div class="invoice-footer">
+            <div class="total-row">
+              <span class="total-label">المجموع</span>
+              <span class="total-value" id="total-val">0.000 د.ك</span>
+            </div>
+            <button class="confirm-btn" id="confirm-btn" disabled onclick="confirmInvoice()">تأكيد الدفع ✓</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="tab-pane" id="pane-services">
+      <div class="services-header">
+        <div class="page-title">إدارة الخدمات</div>
+        <button class="add-btn" onclick="openModal()">+ إضافة خدمة</button>
+      </div>
+      <div class="panel">
+        <div class="svc-table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>اسم الخدمة</th><th>الفئة</th><th>السعر</th><th>الإجراءات</th></tr></thead>
+            <tbody id="services-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- SERVICE MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeModalOnBackdrop(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">إضافة خدمة</div>
+    <div class="form-row"><label class="form-label">اسم الخدمة</label><input class="form-input" id="f-name" placeholder="مثال: قص شعر" /></div>
+    <div class="form-row">
+      <label class="form-label">الفئة</label>
+      <select class="form-select" id="f-cat">
+        <option value="hair">✂️ شعر</option>
+        <option value="beard">🪒 لحية</option>
+        <option value="extra">✨ إضافات</option>
+      </select>
+    </div>
+    <div class="form-row"><label class="form-label">السعر (دينار كويتي)</label><input class="form-input" id="f-price" type="number" step="0.250" min="0" placeholder="0.000" /></div>
+    <div class="modal-actions">
+      <button class="modal-save" onclick="saveService()">حفظ الخدمة</button>
+      <button class="modal-cancel" onclick="closeModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECEIPT MODAL -->
+<div class="receipt-backdrop" id="receipt-backdrop">
+  <div id="print-zone" style="display:contents">
+    <div class="receipt-wrapper">
+      <div class="receipt-inner" id="receipt-content"></div>
+      <div class="receipt-actions">
+        <button class="r-close-btn" onclick="closeReceipt()" title="إغلاق">✕</button>
+        <button class="r-print-btn" onclick="window.print()">🖨️ طباعة الفاتورة</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let services = [
+    { id:1, name:'قص شعر',       category:'hair',  price:2.500 },
+    { id:2, name:'حلاقة لحية',   category:'beard', price:1.500 },
+    { id:3, name:'قص + حلاقة',  category:'hair',  price:3.500 },
+    { id:4, name:'تشكيل حواجب', category:'beard', price:1.000 },
+    { id:5, name:'مساج رأس',    category:'extra', price:2.000 },
+    { id:6, name:'كيراتين لحية', category:'beard', price:4.000 },
+  ];
+  let nextId=7, invoiceItems=[], totalSales=0, invoiceCount=0, editingId=null, activeCat='all';
+
+  // DATE
+  const _now = new Date();
+  document.getElementById('topbar-date').textContent =
+    _now.toLocaleDateString('ar-KW',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  // TABS
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById('pane-'+tab).classList.add('active');
+    btn.classList.add('active');
+    if(tab==='services') renderTable();
+    if(tab==='cashier') renderPicker();
+  }
+
+  // FILTER
+  function filterCat(btn) {
+    document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCat = btn.dataset.cat;
+    renderPicker();
+  }
+
+  // PICKER
+  function renderPicker() {
+    const list = activeCat==='all' ? services : services.filter(s=>s.category===activeCat);
+    document.getElementById('service-picker').innerHTML = list.map(s=>`
+      <div class="svc-btn" onclick="addToInvoice(${s.id})">
+        <div class="svc-name">${s.name}</div>
+        <div><span class="svc-price">${s.price.toFixed(3)}</span> <span class="svc-unit">د.ك</span></div>
+      </div>`).join('');
+  }
+
+  // INVOICE
+  function addToInvoice(id) {
+    const s = services.find(x=>x.id===id);
+    invoiceItems.push({...s, uid: Date.now()+Math.random()});
+    renderInvoice();
+  }
+  function removeItem(uid) { invoiceItems=invoiceItems.filter(i=>i.uid!==uid); renderInvoice(); }
+  function clearInvoice()  { invoiceItems=[]; renderInvoice(); }
+
+  function renderInvoice() {
+    const c   = document.getElementById('invoice-items');
+    const tv  = document.getElementById('total-val');
+    const btn = document.getElementById('confirm-btn');
+    if(!invoiceItems.length) {
+      c.innerHTML=`<div class="empty-state"><div class="empty-icon">🧾</div>لا توجد خدمات بعد</div>`;
+      tv.textContent='0.000 د.ك'; btn.disabled=true; return;
+    }
+    const total = invoiceItems.reduce((s,i)=>s+i.price,0);
+    c.innerHTML = invoiceItems.map(i=>`
+      <div class="inv-item">
+        <span class="inv-name">${i.name}</span>
+        <div class="inv-right">
+          <span class="inv-price">${i.price.toFixed(3)} <small style="font-size:11px;font-family:inherit;color:var(--text-muted)">د.ك</small></span>
+          <button class="inv-remove" onclick="removeItem(${i.uid})">×</button>
+        </div>
+      </div>`).join('');
+    tv.textContent = total.toFixed(3)+' د.ك';
+    btn.disabled = false;
+  }
+
+  // CONFIRM + RECEIPT
+  function confirmInvoice() {
+    const items = [...invoiceItems];
+    const total = items.reduce((s,i)=>s+i.price,0);
+    totalSales += total;
+    invoiceCount++;
+    document.getElementById('stat-sales').textContent = totalSales.toFixed(3)+' د.ك';
+    document.getElementById('stat-count').textContent = invoiceCount;
+    document.getElementById('stat-avg').textContent   = (totalSales/invoiceCount).toFixed(3)+' د.ك';
+
+    const d = new Date();
+    const dateStr = d.toLocaleDateString('ar-KW',{year:'numeric',month:'2-digit',day:'2-digit'});
+    const timeStr = d.toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit'});
+    const invNum  = String(invoiceCount).padStart(4,'0');
+
+    document.getElementById('receipt-content').innerHTML = `
+      <div class="r-brand">
+        <div class="r-brand-name">PLUNT CHOP</div>
+        <div class="r-brand-sub">صالون رجالي — الكويت</div>
+      </div>
+
+      <div class="r-meta">
+        <div class="r-meta-col">
+          <span class="r-meta-key">رقم الفاتورة</span>
+          <span class="r-inv-badge">#${invNum}</span>
+        </div>
+        <div class="r-meta-col ltr">
+          <span class="r-meta-key">التاريخ</span>
+          <span class="r-meta-val">${dateStr}</span>
+          <span class="r-meta-val">${timeStr}</span>
+        </div>
+      </div>
+
+      <div class="r-items-hd">الخدمات المقدمة</div>
+      ${items.map(i=>`
+        <div class="r-item">
+          <span class="r-item-name">${i.name}</span>
+          <span class="r-item-price">${i.price.toFixed(3)} د.ك</span>
+        </div>`).join('')}
+
+      <hr class="r-divider"/>
+      <div class="r-total">
+        <span class="r-total-label">المجموع الكلي</span>
+        <span class="r-total-val">${total.toFixed(3)} د.ك</span>
+      </div>
+
+      <div class="r-footer">
+        <div class="r-footer-msg">شكراً لزيارتكم 🤍</div>
+        <div class="r-footer-sub">نتشرف بخدمتكم دائماً — Plunt Chop Kuwait</div>
+      </div>`;
+
+    invoiceItems = [];
+    renderInvoice();
+    document.getElementById('receipt-backdrop').classList.add('open');
+  }
+
+  function closeReceipt() {
+    document.getElementById('receipt-backdrop').classList.remove('open');
+    showToast('✓ تم تسجيل الفاتورة بنجاح');
+  }
+
+  // TABLE
+  const catLabels={hair:'شعر',beard:'لحية',extra:'إضافات'};
+  const catTags  ={hair:'tag-hair',beard:'tag-beard',extra:'tag-extra'};
+
+  function renderTable() {
+    document.getElementById('services-tbody').innerHTML = services.map((s,i)=>`
+      <tr>
+        <td style="color:var(--text-faint)">${i+1}</td>
+        <td>${s.name}</td>
+        <td><span class="cat-tag ${catTags[s.category]}">${catLabels[s.category]}</span></td>
+        <td><span class="tbl-price">${s.price.toFixed(3)}</span> <span style="font-size:11px;color:var(--text-muted)">د.ك</span></td>
+        <td><div class="act-btns">
+          <button class="act-btn" onclick="openModal(${s.id})">✏️ تعديل</button>
+          <button class="act-btn del" onclick="deleteService(${s.id})">🗑 حذف</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  function deleteService(id) {
+    if(!confirm('هل تريد حذف هذه الخدمة؟')) return;
+    services=services.filter(x=>x.id!==id);
+    renderTable(); renderPicker(); showToast('تم حذف الخدمة');
+  }
+
+  // MODAL
+  function openModal(id=null) {
+    editingId=id;
+    if(id) {
+      const s=services.find(x=>x.id===id);
+      document.getElementById('f-name').value =s.name;
+      document.getElementById('f-cat').value  =s.category;
+      document.getElementById('f-price').value=s.price.toFixed(3);
+      document.getElementById('modal-title').textContent='تعديل الخدمة';
+    } else {
+      document.getElementById('f-name').value ='';
+      document.getElementById('f-cat').value  ='hair';
+      document.getElementById('f-price').value='';
+      document.getElementById('modal-title').textContent='إضافة خدمة جديدة';
+    }
+    document.getElementById('modal-backdrop').classList.add('open');
+    document.getElementById('f-name').focus();
+  }
+  function closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+  function closeModalOnBackdrop(e) { if(e.target===document.getElementById('modal-backdrop')) closeModal(); }
+
+  function saveService() {
+    const name =document.getElementById('f-name').value.trim();
+    const cat  =document.getElementById('f-cat').value;
+    const price=parseFloat(document.getElementById('f-price').value);
+    if(!name) { document.getElementById('f-name').focus(); return; }
+    if(isNaN(price)||price<0) { document.getElementById('f-price').focus(); return; }
+    if(editingId) {
+      const s=services.find(x=>x.id===editingId);
+      s.name=name; s.category=cat; s.price=price;
+    } else {
+      services.push({id:nextId++,name,category:cat,price});
+    }
+    closeModal(); renderTable(); renderPicker();
+    showToast(editingId?'تم تحديث الخدمة ✓':'تمت إضافة الخدمة ✓');
+  }
+
+  // TOAST
+  let toastTimer;
+  function showToast(msg) {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'),2800);
+  }
+
+  renderPicker();
+</script>
+</body>
+</html>
