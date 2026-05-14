@@ -525,6 +525,25 @@
   }
 
   renderPicker();
+
+ function saveData() {
+  localStorage.setItem('plunt_services', JSON.stringify(services));
+  localStorage.setItem('plunt_sales', totalSales);
+  localStorage.setItem('plunt_count', invoiceCount);
+}
+
+function loadData() {
+  const s = localStorage.getItem('plunt_services');
+  if (s) services = JSON.parse(s);
+
+  totalSales = parseFloat(localStorage.getItem('plunt_sales')) || 0;
+  invoiceCount = parseInt(localStorage.getItem('plunt_count')) || 0;
+
+  document.getElementById('stat-sales').textContent = totalSales.toFixed(3)+' د.ك';
+  document.getElementById('stat-count').textContent = invoiceCount;
+  document.getElementById('stat-avg').textContent =
+    invoiceCount ? (totalSales/invoiceCount).toFixed(3)+' د.ك' : '0.000 د.ك';
+}
 </script>
 </body>
 </html>
